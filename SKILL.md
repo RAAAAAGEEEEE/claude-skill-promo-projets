@@ -61,6 +61,12 @@ Autres canaux : voir `canaux/TODO.md` (documentés, non implémentés).
    génériques (« great post », emoji seul), jamais copiés d'un fil à l'autre, au plus 2 par communauté, compte et jour.
 6. Faits : seuls ceux de la fiche projet (avec source) sont affirmables. Aucun chiffre, prix, client ou comparaison
    inventé. Réponse en français : charger le skill `redaction` avant de rédiger.
+6 bis. Ton humain, jamais « IA » : écrire comme un membre du sub, pas comme un assistant. Phrases courtes et
+   inégales, registre de la communauté (tutoiement, argot du sub, minuscules tolérées), une seule idée, avis ou
+   expérience à la première personne quand c'est vrai. Interdits : formules d'ouverture ou de clôture (« Great
+   question! », « Hope this helps », « N'hésite pas »), listes à puces et titres dans un commentaire court, tiret
+   cadratin, gras, triplets d'adjectifs, reformulation de la question, ton promotionnel, emoji décoratif. Relecture
+   finale : si une phrase pourrait sortir de ChatGPT, la réécrire ou la couper.
 7. Une communauté ne sert qu'un projet ; un fil ne reçoit qu'un projet.
 8. Aucun secret ni pseudo réel dans le dépôt ni dans une réponse. Telegram : variables d'environnement seulement.
 
