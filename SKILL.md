@@ -122,6 +122,17 @@ Le script est `scripts/promo.py` (chemin relatif au dossier du skill ; `python` 
     `--telegram` pour un court résumé. À mettre dans une tâche planifiée quotidienne ; Claude rédige ensuite les
     brouillons manquants (modes 6 et 8) puis relance `promo.py page`.
 
+12. **Retours** (projet en test, on cherche des avis plutôt que des clients) : poser dans le post des questions
+    précises (ce qui bloque, ce qui est trop dur ou trop facile, ce qu'on attendait) au lieu de « dites-moi ce que
+    vous en pensez » ; un seul sujet par question, trois au plus. Répondre à chaque retour par un remerciement court,
+    sans défense ni argumentaire, et une question de précision si le retour est flou. Chaque retour utile est
+    enregistré (`promo.py feedback add --project <slug> --source <communauté> --kind bug|difficulte|interface|contenu|idee|compliment|autre
+    --severity 1|2|3 --text "<paraphrase>"`, sans pseudo), puis `promo.py feedback summary --project <slug>` donne la
+    liste par gravité à convertir en éléments de backlog ; `feedback status --index N --status retenu|fait|ecarte`
+    suit le sort de chaque retour. Un retour répété par plusieurs personnes pèse plus qu'un avis isolé ; un compliment
+    n'est jamais un motif de relancer la communauté. Le sort d'un retour est annoncé aux auteurs seulement par une
+    réponse publiée par l'humain, jamais par le skill.
+
 ## Comportements de repli
 
 - Règles illisibles par le réseau (page de vérification, 403, 429) : méthode navigateur du mode 4b ; sinon la
@@ -169,5 +180,5 @@ envoie le titre et l'extrait d'un fil. Aucun secret n'est lu hors des quatre var
 
 ## Versionnement et références
 
-Version 0.2.0 (voir `CHANGELOG.md`, semver). Logique de repérage inspirée d'un pipeline éprouvé en production
+Version 0.3.0 (voir `CHANGELOG.md`, semver). Logique de repérage inspirée d'un pipeline éprouvé en production
 privée ; attributions : `docs/LEGAL_AND_ATTRIBUTION.md`. Limites : `docs/LIMITATIONS.md`.

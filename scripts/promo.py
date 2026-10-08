@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from promo_core import daypage, telegram, warmup  # noqa: E402
+from promo_core import daypage, feedback, telegram, warmup  # noqa: E402
 from promo_core.accounts import AccountError, Registry, clean_handle  # noqa: E402
 from promo_core.channels import reddit  # noqa: E402
 from promo_core.ruleflags import derive_policy, describe, parse_flags  # noqa: E402
@@ -28,7 +28,7 @@ def _paths(root: Path) -> dict[str, Path]:
     return {
         "projets": root / "projets", "ledger": root / "ledger.csv", "rules": root / "communautes.json",
         "sorties": root / "sorties", "reponses": root / "reponses", "comptes": root / "comptes.json",
-        "fils": root / "fils.json", "chauffe": root / "chauffe",
+        "fils": root / "fils.json", "chauffe": root / "chauffe", "retours": root / "retours.csv",
     }
 
 
@@ -318,6 +318,30 @@ def cmd_stats(args: argparse.Namespace, root: Path, **_: object) -> int:
               f"prochain lien {'possible' if ok_a else 'non'} ({why_a})")
     ok, reason = link_allowed(ledger, "declaree-ok", args.warmup)
     print(f"prochain lien possible : {'oui' if ok else 'non'} ({reason})")
+    return 0
+
+
+def cmd_feedback(args: argparse.Namespace, root: Path, **_: object) -> int:
+    path = _paths(root)["retours"]
+    try:
+        if args.verb == "add":
+            projects, _l, _r, _p = _load(root)
+            if args.project not in projects:
+                print(f"ERREUR projet inconnu : {args.project}")
+                return 1
+            row = feedback.add(path, args.date, args.project, args.source or "", args.kind, args.severity, args.text or "")
+            print(f"retour enregistré ({row['kind']}, gravité {row['severity']})")
+        elif args.verb == "list":
+            for index, row in feedback.listing(path, args.project):
+                print(f"n°{index} [{row['kind']}] g{row['severity']} {row['status']} ({row['source'] or 'direct'}) {row['text']}")
+        elif args.verb == "status":
+            feedback.set_status(path, args.index, args.status)
+            print(f"retour n°{args.index} : {args.status}")
+        else:
+            print(feedback.summary(path, args.project), end="")
+    except feedback.FeedbackError as error:
+        print(f"ERREUR {error}")
+        return 1
     return 0
 
 
@@ -692,6 +716,16 @@ def build_parser() -> argparse.ArgumentParser:
     dl.add_argument("--telegram", action="store_true", help="envoie un court résumé Telegram (variables d'environnement)")
     dl.add_argument("--dry-run-telegram", action="store_true")
     dl.set_defaults(func=cmd_daily)
+    fb = sub.add_parser("feedback", help="retours constructifs : add | list | status | summary")
+    fb.add_argument("verb", choices=["add", "list", "status", "summary"])
+    fb.add_argument("--project")
+    fb.add_argument("--source", help="communauté ou canal d'où vient le retour (sans pseudo)")
+    fb.add_argument("--kind", choices=list(feedback.KINDS), default="autre")
+    fb.add_argument("--severity", type=int, default=2, help="1 confort, 2 gêne, 3 bloque ou décourage")
+    fb.add_argument("--text", help="retour, paraphrasé de préférence")
+    fb.add_argument("--index", type=int, help="numéro du retour (status)")
+    fb.add_argument("--status", choices=list(feedback.STATUSES), help="nouveau, retenu, fait, ecarte (status)")
+    fb.set_defaults(func=cmd_feedback)
     se = sub.add_parser("send", help="envoie un rapport sur Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)")
     se.add_argument("file")
     se.add_argument("--dry-run", action="store_true")

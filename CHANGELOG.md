@@ -2,6 +2,13 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement sémantique.
 
+## [0.3.0] - 2026-10-08
+
+### Ajouté
+- Mode Retours : `feedback add|list|status|summary` (fichier `retours.csv`, types bug, difficulté, interface, contenu,
+  idée, compliment ; gravité 1 à 3 ; statut), résumé Markdown par gravité pour alimenter un backlog, consignes de
+  questions précises et de remerciement dans `SKILL.md` (mode 12).
+
 ## [0.2.0] - 2026-10-08
 
 ### Ajouté

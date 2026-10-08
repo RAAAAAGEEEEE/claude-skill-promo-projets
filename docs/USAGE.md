@@ -136,3 +136,14 @@ Rien n'est publié par l'outil : tu relis, tu copies, tu publies toi-même sous 
 ## Voir aussi
 
 [Configuration](CONFIGURATION.md) · [Dépannage](TROUBLESHOOTING.md) · [Limites](LIMITATIONS.md)
+
+## Retours constructifs
+
+```
+promo.py feedback add --project demo --source exemple --kind difficulte --severity 3 --text "le niveau facile reste trop dur pour un joueur occasionnel"
+promo.py feedback summary --project demo
+promo.py feedback status --index 1 --status retenu
+```
+
+`summary` groupe par gravité (3 bloque ou décourage, 2 gêne, 1 confort) et indique le nombre par type. Le texte est une
+paraphrase courte, sans pseudo. Les retours restent dans `retours.csv` du dossier de données.
