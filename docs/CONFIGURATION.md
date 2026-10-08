@@ -8,7 +8,7 @@ Toutes facultatives. Modèle sans valeur : [.env.example](../.env.example). Le s
 | Variable | Rôle | Défaut |
 |---|---|---|
 | `PROMO_DATA_DIR` | dossier de données de l'utilisateur | `~/.promo-projets` |
-| `PROMO_USER_AGENT` | User-Agent déclaré aux requêtes en lecture | `promo-projets/0.1 (lecture seule, aucune publication)` |
+| `PROMO_USER_AGENT` | User-Agent déclaré aux requêtes en lecture | `promo-projets/0.2 (lecture seule, aucune publication)` |
 | `TELEGRAM_BOT_TOKEN` | jeton du bot, pour `send` | aucun |
 | `TELEGRAM_CHAT_ID` | conversation de destination, pour `send` | aucun |
 
@@ -19,10 +19,13 @@ Toutes facultatives. Modèle sans valeur : [.env.example](../.env.example). Le s
 | Chemin | Contenu |
 |---|---|
 | `projets/<slug>.md` | une fiche par projet |
-| `communautes.json` | règles lues : politique, citation, date de lecture, projet |
-| `ledger.csv` | contributions : `id,date,project,sub,thread_url,kind,has_link,status,note` |
-| `reponses/<id-du-fil>.md` | réponses finales à contrôler |
-| `sorties/` | rapports du jour et de découverte |
+| `comptes.json` | registre des comptes : rôle, projets et communautés affectés, karma, date de création, bannissements |
+| `communautes.json` | règles lues : politique, citation, date de lecture, texte des règles importé, source, drapeaux |
+| `ledger.csv` | contributions : `id,date,project,sub,thread_url,kind,has_link,status,note,account,origin` (`origin` : promo, warmup, manual) |
+| `fils.json` | cache des titres et extraits de fils proposés (500 derniers), pour la page du jour |
+| `reponses/<id-du-fil>.md` | réponses de promo finales à contrôler |
+| `chauffe/AAAA-MM-JJ/<compte>__<id-du-fil>.md` | brouillons de chauffe du jour |
+| `sorties/` | rapports du jour (`.md`), page du jour (`.html`), rapports de découverte, marqueurs `.AAAA-MM-JJ.*.ok` de `daily` |
 
 Ces fichiers contiennent tes données : ne jamais les committer dans le dépôt du skill (`.gitignore` les exclut).
 
@@ -49,12 +52,31 @@ ou `clé:` suivie de lignes `  - élément`. Le corps libre sert de notes (ton, 
 
 Un fil est retenu à partir de 2 points. Le nom du fichier est le slug (lettres minuscules, chiffres, tirets).
 
+## Comptes
+
+`promo.py accounts add <pseudo> --role <texte> --karma N (--since AAAA-MM-JJ | --age-days N)` crée ou met à jour un
+compte ; `accounts assign <pseudo> --projects a,b --subs X,Y` l'affecte ; `accounts ban <pseudo> <sub>` note un
+bannissement et ferme la communauté à tous les comptes ; `accounts list` affiche le registre. Pseudo : 3 à 20 lettres,
+chiffres, tiret, tiret bas, sans pseudo réel dans le dépôt. Un compte sans `--subs` utilise les communautés de ses
+projets pour la chauffe ; sans `--projects`, il peut recevoir n'importe quel projet. Le karma et l'âge ne sont pas lus sur
+Reddit : tu les tiens à jour à la main.
+
+## Drapeaux tirés des règles lues
+
+`rules fetch` et `rules import` enregistrent le texte (daté, avec sa source) et en tirent : `autopromo_interdite`,
+`liens_interdits`, `fil_dedie`, `jour_autopromo` (0 = lundi), `ratio_fenetre` (1 contribution avec lien sur N),
+`karma_min`, `age_min_jours`. Heuristiques en anglais et en français ; le texte intégral reste stocké pour relecture.
+Politique déduite : `interdit` (autopromo ou liens interdits), `declaree-ok` (jour dédié ou ratio explicite),
+`fil-dedie`, sinon `non-verifie` (aucun lien). Un import n'assouplit jamais une politique posée à la main.
+
 ## Seuils réglables
 
-`--warmup N` (30 par défaut) : contributions sans lien avant le premier lien. `scan --max` (4) : fils par
-passe ; `--max-per-project` (2). Les autres seuils (plafond 1 sur 10, 1 400 signes, 500 abonnés minimum, 30
+`--warmup N` (30 par défaut) : contributions sans lien avant le premier lien, comptées par compte. `scan --max` (4) :
+fils par passe ; `--max-per-project` (2). Chauffe (`warmup run`, `daily`) : `--per-account` (4 par défaut, 1 à 10
+acceptés, 3 à 5 conseillés), `--per-sub` (2). Brouillon de chauffe : 15 mots et 90 signes au minimum, 700 au maximum,
+ressemblance maximale 80 % avec un autre brouillon (constantes de `warmup.py`). Les autres seuils (plafond 1 sur 10, 1 400 signes, 500 abonnés minimum, 30
 jours d'inactivité maximum, 0,3 fil par jour minimum, 65 s entre deux flux) sont des constantes de
-`scripts/promo_core/state.py`, `scan.py` et `channels/reddit.py`.
+`scripts/promo_core/state.py`, `scan.py`, `warmup.py` et `channels/reddit.py`.
 
 ## Voir aussi
 

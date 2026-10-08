@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .channels.reddit import Thread
 from .project import Project
+from .accounts import Registry
 from .state import Contribution, Ledger, Rules, WARMUP_DEFAULT, link_allowed
 
 MAX_REPLY_CHARS = 1400
@@ -22,6 +23,7 @@ class Proposal:
     link_ok: bool
     link_reason: str
     contribution_id: str = ""
+    account: str = ""
 
 
 def rotation_order(projects: dict[str, Project], ledger: Ledger) -> list[Project]:
@@ -37,18 +39,27 @@ def plan(
     max_total: int = 4,
     max_per_project: int = 2,
     warmup: int = WARMUP_DEFAULT,
+    registry: Registry | None = None,
+    day: str | None = None,
+    notes: list[str] | None = None,
 ) -> list[Proposal]:
     """Répartit les fils retenus entre projets, un tour par projet, sans toucher au ledger sur disque.
 
     - un fil n'est jamais proposé à deux projets (ni s'il figure déjà au ledger) ;
-    - au plus un lien autorisé par passe : le plafond global 1 sur 10 est lu sur le ledger, tous projets confondus.
+    - au plus un lien autorisé par passe ET par compte : le plafond 1 sur 10 est lu sur le ledger, par compte (tous
+      projets confondus). Sans registre de comptes, un seul compte implicite.
+
+    Avec un registre : chaque fil reçoit un compte affecté au projet et à la communauté, jamais deux comptes dans le même
+    fil ni dans la même communauté le même jour, jamais le compte d'un fil écrit par un autre de tes comptes.
     """
+    day = day or date.today().isoformat()
+    claimed: dict[str, str] = {}  # communauté (minuscules) -> compte, pour ce jour
     order = rotation_order(projects, ledger)
     queues = {p.slug: [c for c in candidates.get(p.slug, []) if c[0].url not in ledger.known_threads()] for p in order}
     taken: set[str] = set()
     per_project = {p.slug: 0 for p in order}
     proposals: list[Proposal] = []
-    link_given = False
+    link_given: dict[str, bool] = {}
     progress = True
     while progress and len(proposals) < max_total:
         progress = False
@@ -65,21 +76,53 @@ def plan(
             thread, score, matched = queue.pop(0)
             taken.add(thread.url)
             policy = rules.policy(thread.sub)
-            ok, reason = link_allowed(ledger, policy, warmup)
-            if ok and link_given:
-                ok, reason = False, "un seul lien autorisé par passe"
-            link_given = link_given or ok
-            proposals.append(Proposal(project, thread, score, matched, policy, ok, reason))
+            flags = rules.flags(thread.sub)
+            account = ""
+            if registry:
+                account, why = _pick_account(registry, ledger, project, thread, policy, flags, warmup, day, claimed)
+                if not account:
+                    if notes is not None:
+                        notes.append(f"r/{thread.sub} fil {thread.id} : aucun compte possible ({why})")
+                    continue
+                claimed[thread.sub.lower()] = account
+            ok, reason = link_allowed(ledger, policy, warmup, account or None, flags, day)
+            if ok and link_given.get(account):
+                ok, reason = False, "un seul lien autorisé par passe et par compte"
+            link_given[account] = link_given.get(account, False) or ok
+            proposals.append(Proposal(project, thread, score, matched, policy, ok, reason, account=account))
             per_project[project.slug] += 1
             progress = True
     return proposals
+
+
+def _pick_account(registry, ledger, project, thread, policy, flags, warmup, day, claimed):
+    """Compte pour ce fil, ou ("", raison). Préfère un compte qui peut poser un lien, puis le moins chargé."""
+    if thread.author and thread.author.lower() in registry.handles():
+        return "", "fil écrit par un de tes comptes : jamais de réponse d'un compte à l'autre"
+    reasons: list[str] = []
+    options = []
+    for handle in sorted(registry.accounts):
+        account = registry.accounts[handle]
+        why = registry.eligible(account, thread.sub, flags, day, project.slug)
+        if not why:
+            why = ledger.conflict(handle, thread.sub, thread.url, day)
+        if not why and claimed.get(thread.sub.lower(), handle) != handle:
+            why = f"le compte {claimed[thread.sub.lower()]} est déjà dans r/{thread.sub} aujourd'hui"
+        if why:
+            reasons.append(f"{handle} : {why}")
+            continue
+        ok, _ = link_allowed(ledger, policy, warmup, handle, flags, day)
+        options.append((not ok, len(ledger.counted(handle)), handle))
+    if not options:
+        return "", " ; ".join(reasons) or "aucun compte enregistré"
+    return min(options)[2], ""
 
 
 def record_proposals(proposals: list[Proposal], ledger: Ledger, today: str | None = None) -> None:
     for p in proposals:
         row = ledger.add(
             date=today or date.today().isoformat(), project=p.project.slug, sub=p.thread.sub,
-            thread_url=p.thread.url, kind="comment", has_link=False, status="proposed", note=f"score {p.score}",
+            thread_url=p.thread.url, kind="comment", has_link=False, status="proposed", note=f"score {p.score}", account=p.account, origin="promo",
         )
         p.contribution_id = row.id
 
@@ -108,7 +151,7 @@ def render_report(
         lines += ["## Fils retenus", "", "Aucun fil retenu aujourd'hui (rien de pertinent, ou tout déjà traité).", ""]
     for index, p in enumerate(proposals, start=1):
         lines += [
-            f"## {index}. {p.project.nom} : r/{p.thread.sub}",
+            f"## {index}. {p.project.nom} : r/{p.thread.sub}" + (f" (compte {p.account})" if p.account else ""),
             "",
             f"- Fil : {p.thread.url}",
             f"- Titre : {p.thread.title}",

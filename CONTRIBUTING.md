@@ -9,7 +9,7 @@
 
 ## Refusé d'office
 
-Publication ou vote automatiques, multi-compte, contournement de 429 ou 403, grattage de pages, fiches de
+Publication ou vote automatiques, création de comptes, usage d'un compte pour contourner un bannissement, réponse d'un compte à un autre, contournement de 429, 403 ou d'une page de vérification, grattage de pages, fiches de
 projets réels, e-mails ou secrets dans le dépôt.
 
 ## Ajouter un canal

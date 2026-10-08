@@ -32,7 +32,7 @@ MIN_THREADS_PER_DAY = 0.3
 
 
 def user_agent() -> str:
-    return os.environ.get("PROMO_USER_AGENT") or "promo-projets/0.1 (lecture seule, aucune publication)"
+    return os.environ.get("PROMO_USER_AGENT") or "promo-projets/0.2 (lecture seule, aucune publication)"
 
 
 # Un « fetcher » reçoit une URL et retourne (statut HTTP, corps texte). Injectable pour les tests.
@@ -45,7 +45,10 @@ def http_get(url: str) -> tuple[int, str]:
         with urllib.request.urlopen(request, timeout=25) as response:
             return response.status, response.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as error:
-        return error.code, ""
+        try:
+            return error.code, error.read(200_000).decode("utf-8", errors="replace")  # corps conservé : détecte une page de vérification
+        except OSError:
+            return error.code, ""
     except (urllib.error.URLError, TimeoutError, OSError):
         return 0, ""
 
@@ -57,6 +60,7 @@ class Thread:
     title: str
     url: str
     text: str
+    author: str = ""
 
 
 _THREAD_URL = re.compile(r"^https://(?:www\.|old\.)?reddit\.com/r/([^/]+)/comments/([a-z0-9]+)/", re.I)
@@ -85,7 +89,8 @@ def parse_thread_feed(xml: str) -> list[Thread]:
         if not match or not title.strip():
             continue
         text = re.sub(r"\s*\[link\]\s*\[comments\]\s*$", "", strip_tags(html.unescape(content)))
-        threads.append(Thread(match.group(2), match.group(1), strip_tags(title), html.unescape(url), text[:2000]))
+        author = (entry.findtext(f"{ATOM}author/{ATOM}name") or "").strip().removeprefix("/u/").removeprefix("u/")
+        threads.append(Thread(match.group(2), match.group(1), strip_tags(title), html.unescape(url), text[:2000], author))
     return threads
 
 
@@ -126,6 +131,26 @@ def fetch_threads(
             sleep(delay)
         url = f"https://www.reddit.com/r/{sub}/search.rss?q={urllib.parse.quote(query)}&restrict_sr=1&sort=new"
         status, body = fetch(url)
+        if status == 429:
+            warnings.append(f"HTTP 429 sur r/{sub} : la passe s'arrête ici (relancer plus tard)")
+            break
+        if status != 200:
+            warnings.append(f"r/{sub} illisible (statut {status})")
+            continue
+        out.extend(parse_thread_feed(body))
+    return out, warnings
+
+
+def fetch_new_threads(
+    subs: list[str], fetch: Fetcher = http_get, sleep: Callable[[float], None] = time.sleep, delay: float = FEED_DELAY_S
+) -> tuple[list[Thread], list[str]]:
+    """Derniers fils de chaque communauté (flux /new.rss), pour la chauffe. Même cadence, arrêt au premier 429."""
+    out: list[Thread] = []
+    warnings: list[str] = []
+    for index, sub in enumerate(subs):
+        if index:
+            sleep(delay)
+        status, body = fetch(f"https://www.reddit.com/r/{sub}/new.rss?limit=25")
         if status == 429:
             warnings.append(f"HTTP 429 sur r/{sub} : la passe s'arrête ici (relancer plus tard)")
             break

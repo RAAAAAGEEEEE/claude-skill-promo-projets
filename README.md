@@ -1,37 +1,43 @@
 # promo-projets
 
-Skill Claude Code pour promouvoir plusieurs projets (site documentaire, jeu vidéo, SaaS, outil) sur Reddit
-avec un seul compte, sans spam et sans publication autonome. L'outil repère, prépare et tient les comptes ;
-c'est toi qui publies.
+Skill Claude Code : une « forge » de promotion Reddit semi-automatique pour plusieurs projets (site documentaire,
+jeu vidéo, SaaS, outil) et un ou plusieurs comptes que tu possèdes déjà. Elle repère, prépare les brouillons, tient
+les comptes et prépare une page du jour ; c'est toi qui publies, toujours (le dernier clic).
 
 ## Le problème
 
-Un entrepreneur solo qui a trois projets et un seul compte Reddit se fait bannir de deux façons : en postant
-un lien dans chaque réponse, ou en poussant plusieurs projets dans les mêmes communautés. Reddit demande
-surtout de la participation réelle et, pour l'autopromotion, une déclaration claire ; les règles varient par
-communauté et l'API de données n'est plus en libre-service.
+Un entrepreneur solo qui a plusieurs projets se fait bannir de trois façons : un lien dans chaque réponse, plusieurs
+projets dans les mêmes communautés, ou des comptes qui se répondent. Reddit demande de la participation réelle et, pour
+l'autopromotion, une déclaration claire ; les règles varient par communauté et l'API de données n'est plus en
+libre-service.
 
 ## Pour qui
 
-Fondateurs solo ou petites équipes qui ont au moins deux projets à faire connaître et acceptent de publier
-à la main.
+Fondateurs solo ou petites équipes qui ont au moins deux projets à faire connaître, un ou deux comptes Reddit déjà
+actifs, et qui acceptent de publier à la main.
 
 ## Ce qu'il apporte
 
-- Une fiche par projet : pitch, public, liens, faits sourcés (un fait sans source est refusé), mots-clés.
-- Découverte de communautés par flux RSS publics et archive Arctic Shift, avec taille et activité.
-- Règle non lue = `[NV]` : pas de repérage, pas de lien tant que la phrase de l'onglet Règles n'est pas enregistrée.
-- Repérage de fils par flux RSS publics (pas d'API, pas de jeton), espacé de 65 s, arrêt au premier 429.
-- Ledger commun : au plus 1 contribution sur 10 avec lien, tous projets confondus, rotation entre projets,
-  jamais deux projets dans un même fil, communautés séparées par projet.
-- Brief par fil pour une réponse en 3 passes, contrôles mécaniques (`check-reply`), rapport Markdown du jour
-  ou envoi Telegram.
+- Fiche par projet : pitch, public, liens, faits sourcés (un fait sans source est refusé), mots-clés.
+- **Multi-comptes** : registre (pseudo, rôle, projets et communautés affectés, karma, âge). Règles dures codées : jamais
+  deux comptes dans le même fil ni la même communauté le même jour, jamais de réponse d'un compte à l'autre, un
+  bannissement ferme la communauté à tous les comptes, ratio de liens (au plus 1 sur 10) tenu PAR COMPTE.
+- **Chauffe** : chaque jour, par compte, 3 à 5 fils où une réponse courte et utile est possible, brouillons SANS lien ni
+  mention de projet ; réponses génériques, emoji seul, copier-coller et excès par communauté refusés.
+- **Règles lues** : `rules fetch` (rules.json puis old.reddit.com, détection d'une page de vérification) ou
+  `rules import` depuis un texte lu dans le navigateur ; drapeaux (autopromo interdite, ratio, karma ou âge minimum, jour
+  dédié, liens interdits) respectés par le planificateur.
+- **Page du jour** : un fichier HTML sans dépendance, par compte : texte, communauté, boutons Copier, Ouvrir le fil,
+  Marquer publié. Serveur local facultatif (`serve`, 127.0.0.1) qui enregistre le clic.
+- **`daily`** : repérage, chauffe, contrôle des réponses de promo, page du jour ; idempotent, pour une tâche planifiée.
+- Découverte de communautés, repérage par flux RSS publics (65 s entre deux, arrêt au premier 429), rotation entre
+  projets, rapport Markdown, Telegram facultatif.
 
 ## Statut
 
-Alpha (0.1.0). Reddit seul est implémenté ; les autres canaux sont documentés dans
-[canaux/TODO.md](canaux/TODO.md). 51 tests automatiques ; le repérage en conditions réelles dépend de la
-disponibilité des flux publics de Reddit (voir [docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+Alpha (0.2.0). Reddit seul est implémenté ; les autres canaux sont documentés dans [canaux/TODO.md](canaux/TODO.md).
+Suite de tests automatiques, réseau simulé (`python -m unittest discover -s tests`). Le repérage en conditions réelles
+dépend de la disponibilité des flux publics de Reddit (voir [docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
 
 ## Prérequis
 
@@ -50,21 +56,24 @@ python scripts/promo.py check
 `init` crée `~/.promo-projets/` avec deux fiches fictives. Les remplacer par tes projets, puis suivre
 [docs/USAGE.md](docs/USAGE.md).
 
-## Exemple minimal
+## Exemple minimal (deux comptes)
 
 ```bash
-python scripts/promo.py rules Lighthouses --policy declaree-ok --quote "Self-promotion is allowed if you disclose your link."
-python scripts/promo.py scan --project atlas-des-phares --from-feed fil.xml
+python scripts/promo.py accounts add compte_a --role principal --karma 400 --age-days 700
+python scripts/promo.py accounts assign compte_a --projects atlas-des-phares --subs Lighthouses
+python scripts/promo.py rules import Lighthouses --from-text regles-lighthouses.txt
+python scripts/promo.py daily
 ```
 
-Sortie : un rapport `~/.promo-projets/sorties/AAAA-MM-JJ.md` (exemple complet dans [docs/USAGE.md](docs/USAGE.md)).
-Dans Claude Code, demander par exemple « repère des fils Reddit pour mes projets » : le skill suit la procédure
-de [SKILL.md](SKILL.md).
+Sortie : `~/.promo-projets/sorties/AAAA-MM-JJ.html` (page du jour) et `.md` (rapport). Exemple complet, sorties réelles
+comprises : [docs/USAGE.md](docs/USAGE.md). Dans Claude Code, demander par exemple « chauffe mes comptes Reddit
+aujourd'hui » : le skill suit la procédure de [SKILL.md](SKILL.md).
 
 ## Architecture
 
-Un script (`scripts/promo.py`) et une bibliothèque (`scripts/promo_core/`) : fiches, règles, ledger, canal
-Reddit en lecture seule, planification, contrôles, Telegram. Détail : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Un script (`scripts/promo.py`) et une bibliothèque (`scripts/promo_core/`) : fiches, comptes, règles et drapeaux,
+ledger, canal Reddit en lecture seule, planification, chauffe, page du jour, contrôles, Telegram. Détail :
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Configuration
 
@@ -73,18 +82,20 @@ Quatre variables d'environnement facultatives, un dossier de données. Détail :
 
 ## Sécurité et confidentialité
 
-Lecture seule vers Reddit et Arctic Shift, aucun secret dans le dépôt, Telegram optionnel.
-Détail : [docs/PRIVACY_AND_SECURITY.md](docs/PRIVACY_AND_SECURITY.md) et [SECURITY.md](SECURITY.md).
+Lecture seule vers Reddit et Arctic Shift, aucun secret dans le dépôt, aucun compte créé ni connecté, serveur local
+limité à 127.0.0.1, Telegram optionnel. Détail : [docs/PRIVACY_AND_SECURITY.md](docs/PRIVACY_AND_SECURITY.md) et
+[SECURITY.md](SECURITY.md).
 
 ## Limites
 
-Pas de lecture automatique de l'onglet Règles, pas de publication, un compte, Reddit seul, mots-clés
-plutôt que compréhension. Liste complète : [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
+Lecture réseau des règles fragile (page de vérification possible), drapeaux par heuristiques, karma et âge saisis à la
+main, choix des fils de chauffe mécanique, aucune garantie contre un bannissement, Reddit seul. Liste complète :
+[docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 
 ## Roadmap non contractuelle
 
-Autres canaux (voir [canaux/TODO.md](canaux/TODO.md)), lecture des règles via l'API officielle si l'accès
-est un jour accordé, import de fils depuis des alertes e-mail.
+Autres canaux (voir [canaux/TODO.md](canaux/TODO.md)), lecture des règles via l'API officielle si l'accès est un jour
+accordé, import de fils depuis des alertes e-mail.
 
 ## Documentation
 
