@@ -8,8 +8,10 @@ Statut : implémenté dans `scripts/promo_core/channels/reddit.py`.
   (`/r/<sub>/search.rss?q=...&restrict_sr=1&sort=new`). Environ une requête anonyme par minute : le code attend
   65 s entre deux et s'arrête au premier 429.
 - Règles d'une communauté : `https://www.reddit.com/r/<sub>/about/rules.json`, puis
-  `https://old.reddit.com/r/<sub>/about/rules/` (`promo.py rules fetch`). Si une page HTML de vérification remplace le
-  JSON, le texte est lu par le navigateur de l'utilisateur et importé (`promo.py rules import`).
+  `https://old.reddit.com/r/<sub>/about/rules/`, puis la copie archivée
+  `https://arctic-shift.photon-reddit.com/api/subreddits/rules?subreddits=<sub>` (`promo.py rules fetch`). La copie
+  d'archive est enregistrée avec sa date (`arctic-shift (copie du AAAA-MM-JJ)`) et signalée au-delà de 90 jours. Si rien
+  n'est lisible, le texte est lu par le navigateur de l'utilisateur et importé (`promo.py rules import`).
 - Derniers fils d'une communauté (`/r/<sub>/new.rss`) pour la chauffe.
 - Archive publique Arctic Shift : abonnés, date et cadence des 100 derniers fils, colonne latérale archivée.
   Elle ne donne PAS les règles à jour.

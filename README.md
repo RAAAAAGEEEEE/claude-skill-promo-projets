@@ -24,7 +24,8 @@ actifs, et qui acceptent de publier à la main.
   bannissement ferme la communauté à tous les comptes, ratio de liens (au plus 1 sur 10) tenu PAR COMPTE.
 - **Chauffe** : chaque jour, par compte, 3 à 5 fils où une réponse courte et utile est possible, brouillons SANS lien ni
   mention de projet ; réponses génériques, emoji seul, copier-coller et excès par communauté refusés.
-- **Règles lues** : `rules fetch` (rules.json puis old.reddit.com, détection d'une page de vérification) ou
+- **Règles lues** : `rules fetch` (rules.json, old.reddit.com, puis copie datée de l'archive Arctic Shift ; détection d'une
+  page de vérification) ou
   `rules import` depuis un texte lu dans le navigateur ; drapeaux (autopromo interdite, ratio, karma ou âge minimum, jour
   dédié, liens interdits) respectés par le planificateur.
 - **Page du jour** : un fichier HTML sans dépendance, par compte : texte, communauté, boutons Copier, Ouvrir le fil,

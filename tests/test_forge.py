@@ -215,11 +215,34 @@ class RulesFetchTests(unittest.TestCase):
         self.assertIsNone(text)
         self.assertEqual(sum("vérification" in w for w in warnings), 2)
 
-    def test_both_blocked_returns_none_with_warnings(self):
+    def test_all_blocked_returns_none_with_warnings(self):
         text, source, warnings = fetch_rules("S", lambda u: (200, BLOCK_PAGE), lambda s: None)
         self.assertIsNone(text)
-        self.assertEqual(len(warnings), 2)
+        self.assertEqual(len(warnings), 3)
         self.assertTrue(is_block_page(BLOCK_PAGE))
+
+    def test_archive_fallback_is_dated_and_flagged_when_old(self):
+        archive = json.dumps({"data": [{"subreddit": "S", "retrieved_on": 1737790483, "rules": [
+            {"short_name": "No spam", "description": "Self-promotion only in the weekly thread, never as a post."}]}]})
+        calls = []
+
+        def fetch(url):
+            calls.append(url)
+            return (200, archive) if "arctic-shift" in url else (403, BLOCK_PAGE)
+
+        text, source, warnings = fetch_rules("S", fetch, lambda s: None)
+        self.assertIn("No spam", text)
+        self.assertEqual(source, "arctic-shift (copie du 2025-01-25)")
+        self.assertTrue(any("à confirmer" in w for w in warnings))
+        self.assertIn("subreddits/rules?subreddits=S", calls[2])
+
+    def test_archive_without_rules_is_not_a_read(self):
+        def fetch(url):
+            return (200, json.dumps({"data": []})) if "arctic-shift" in url else (403, BLOCK_PAGE)
+
+        text, _, warnings = fetch_rules("S", fetch, lambda s: None)
+        self.assertIsNone(text)
+        self.assertTrue(any("aucune règle" in w for w in warnings))
 
     def test_429_stops_at_once(self):
         calls = []

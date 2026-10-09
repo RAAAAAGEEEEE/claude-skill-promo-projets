@@ -93,8 +93,10 @@ Le script est `scripts/promo.py` (chemin relatif au dossier du skill ; `python` 
    mettre dans `subs` d'UNE seule fiche (promo) ou dans `--subs` d'un compte (chauffe seule).
 4. **Lire les règles**, dans cet ordre :
    a. `promo.py rules fetch <sub>` essaie `https://www.reddit.com/r/<sub>/about/rules.json` puis
-      `https://old.reddit.com/r/<sub>/about/rules/` (User-Agent descriptif). Depuis certains PC, www.reddit.com répond
-      par une page HTML de vérification : la commande le détecte, n'enregistre rien et affiche la méthode b.
+      `https://old.reddit.com/r/<sub>/about/rules/` (User-Agent descriptif), puis la copie datée de l'archive Arctic Shift
+      (`/api/subreddits/rules`). Depuis certains PC, Reddit répond par une page HTML de vérification : la commande le
+      détecte. Une copie d'archive de plus de 90 jours est enregistrée mais signalée : la confirmer sur Reddit avant de
+      passer une politique à `declaree-ok`. Si aucune source ne répond, rien n'est enregistré : méthode b.
    b. Méthode navigateur : ouvrir `https://old.reddit.com/r/<sub>/about/rules` dans le navigateur intégré (outils
       `mcp__Claude_Browser__*`, lire d'abord le skill `anthropic-skills:built-in-browser`), `get_page_text`, enregistrer le
       texte dans un fichier (outil Write), puis `promo.py rules import <sub> --from-text <fichier>`.
