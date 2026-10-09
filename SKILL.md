@@ -67,7 +67,9 @@ Autres canaux : voir `canaux/TODO.md` (documentés, non implémentés).
    question! », « Hope this helps », « N'hésite pas »), listes à puces et titres dans un commentaire court, tiret
    cadratin, gras, triplets d'adjectifs, reformulation de la question, ton promotionnel, emoji décoratif. Relecture
    finale : si une phrase pourrait sortir de ChatGPT, la réécrire ou la couper.
-7. Une communauté ne sert qu'un projet ; un fil ne reçoit qu'un projet.
+7. Une communauté ne sert qu'un projet ; un fil ne reçoit qu'un projet. Chaque compte chauffe dans les communautés de
+   TOUS les projets (sauf `accounts assign --subs` qui le restreint) ; ses liens ne visent que ses projets affectés.
+   Jamais deux comptes dans le même fil ni dans la même communauté le même jour.
 8. Aucun secret ni pseudo réel dans le dépôt ni dans une réponse. Telegram : variables d'environnement seulement.
 
 ## Entrées et sorties

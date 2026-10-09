@@ -630,5 +630,14 @@ class ServeTests(unittest.TestCase):
         self.assertEqual(self.req("/autre")[0], 404)
 
 
+class SubPoolTest(unittest.TestCase):
+    def test_account_without_subs_warms_up_in_every_project(self):
+        from types import SimpleNamespace
+        from promo_core.accounts import Account
+        projects = {"a": SimpleNamespace(subs=["robotics"]), "b": SimpleNamespace(subs=["godot", "indiegames"])}
+        self.assertEqual(warmup._sub_pool(Account(handle="x1", projects=["a"]), projects), ["godot", "indiegames", "robotics"])
+        self.assertEqual(warmup._sub_pool(Account(handle="x2", projects=["a"], subs=["robotics"]), projects), ["robotics"])
+
+
 if __name__ == "__main__":
     unittest.main()

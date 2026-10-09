@@ -130,9 +130,12 @@ def draft_path(root: Path, day: str, account: str, thread_id: str) -> Path:
 
 
 def _sub_pool(account: Account, projects: dict[str, Project]) -> list[str]:
+    """Chauffe : les communautés affectées au compte, sinon celles de TOUS les projets.
+
+    Un compte chauffe partout ; seuls ses liens restent limités à ses projets (voir Registry.eligible)."""
     if account.subs:
         return list(account.subs)
-    return sorted({s for slug in account.projects if slug in projects for s in projects[slug].subs})
+    return sorted({s for project in projects.values() for s in project.subs})
 
 
 def warmup_subs(registry: Registry, projects: dict[str, Project], rules: Rules) -> list[str]:
